@@ -1,0 +1,10 @@
+langchain
+langchain_community
+langchain_openai
+openai
+python-dotenv
+chromadb
+tiktoken
+google-generativeai
+langchain-google-genai
+pypdf>=5.4.0
