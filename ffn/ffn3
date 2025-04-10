@@ -1,0 +1,21 @@
+# Step 3: Fine-Tuning the Encoder + Feedforward Neural Network (FNN) Together
+
+# Enable gradients for the BERT model (fine-tuning both Encoder + FNN)
+for param in model.bert.parameters():
+    param.requires_grad = True
+
+# Training loop to fine-tune both Encoder and FNN
+model.train()
+for epoch in range(5):
+    optimizer.zero_grad()
+    # Forward pass through entire model
+    outputs = model(input_ids, attention_mask).squeeze()
+    # Calculate loss
+    loss = criterion(outputs, labels)
+    # Backward pass
+    loss.backward()
+    # Update all model weights
+    optimizer.step()
+    print(f'Epoch {epoch+1}, Loss: {loss.item()}')
+
+# In this approach, both the Encoder (BERT) and FNN are fine-tuned together.
