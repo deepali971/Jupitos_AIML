@@ -1,5 +1,5 @@
 #QLoRA Implementation
-!huggingface-cli login --token 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 --add-to-git-credential
+!huggingface-cli login --token --add-to-git-credential
 
 from transformers import AutoModelForCausalLM, BitsAndBytesConfig
 import torch # Make sure to import torch
