@@ -1,0 +1,90 @@
+# Importing required libraries
+import torch  # PyTorch for deep learning operations
+import torch.nn as nn  # Neural network components like Linear, ReLU, BCEWithLogitsLoss
+import torch.optim as optim  # Optimizer for updating model weights
+from transformers import BertModel, BertTokenizer  # HuggingFace Transformers for BERT pre-trained model
+
+# Load pre-trained BERT model and tokenizer
+# Tokenizer is used to convert text to numerical representation
+# BERT model is pre-trained and we will extract embeddings from it
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+model = BertModel.from_pretrained('bert-base-uncased')
+
+# Step 1: Creating a Feedforward Neural Network (FNN)
+class FeedForwardNetwork(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super(FeedForwardNetwork, self).__init__()
+        # First linear layer to reduce or increase dimensions
+        self.linear1 = nn.Linear(input_dim, hidden_dim)
+        # Activation function to introduce non-linearity
+        self.relu = nn.ReLU()
+        # Second linear layer to project the output to desired output_dim
+        self.linear2 = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x):
+        # Pass input through first layer
+        x = self.linear1(x)
+        # Apply ReLU activation
+        x = self.relu(x)
+        # Pass through second layer
+        x = self.linear2(x)
+        # Return the output
+        return x
+
+# Step 2: Creating Transformer Encoder with Feedforward Network
+class TransformerEncoderWithFNN(nn.Module):
+    def __init__(self, model):
+        super(TransformerEncoderWithFNN, self).__init__()
+        # Load BERT model for embeddings
+        self.bert = model
+        # Attach a Feedforward Neural Network on top of BERT
+        self.ffn = FeedForwardNetwork(768, 512, 1)
+
+    def forward(self, input_ids, attention_mask):
+        # Forward pass through BERT
+        outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+        # Extract the last hidden state
+        last_hidden_state = outputs.last_hidden_state
+        # Extract the embedding of [CLS] token (used for classification)
+        cls_embedding = last_hidden_state[:, 0, :]
+        # Pass embedding through the Feedforward Network
+        output = self.ffn(cls_embedding)
+        # Return the output
+        return output
+
+# Step 3: Instantiate the model
+# Passing the pre-trained BERT to our custom Transformer with FNN
+model = TransformerEncoderWithFNN(model)
+
+# Step 4: Define Optimizer and Loss Function
+optimizer = optim.Adam(model.parameters(), lr=1e-5)
+# Binary Cross Entropy with Logits (for binary classification)
+criterion = nn.BCEWithLogitsLoss()
+
+# Step 5: Sample input text for classification
+# We have two example sentences with positive/negative sentiment
+text = ["This is a great movie!", "This is a terrible movie."]
+# Ground truth labels (1 for positive, 0 for negative)
+labels = torch.tensor([1, 0], dtype=torch.float32)
+
+# Step 6: Tokenize input text
+# Convert text into input_ids and attention_masks
+encodings = tokenizer(text, padding=True, truncation=True, return_tensors='pt')
+input_ids = encodings['input_ids']
+attention_mask = encodings['attention_mask']
+
+# Step 7: Model Training Loop
+model.train()  # Set model to training mode
+for epoch in range(5):
+    # Zero the gradients from the previous step
+    optimizer.zero_grad()
+    # Forward pass through the model
+    outputs = model(input_ids, attention_mask).squeeze()
+    # Calculate the loss
+    loss = criterion(outputs, labels)
+    # Backward pass for gradient computation
+    loss.backward()
+    # Update model parameters using optimizer
+    optimizer.step()
+    # Print loss for each epoch
+    print(f'Epoch {epoch+1}, Loss: {loss.item()}')

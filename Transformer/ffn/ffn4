@@ -1,0 +1,26 @@
+# Step 4: Applying LoRA to Optimize Feedforward Neural Network (FNN) within Encoder
+from peft import LoraConfig, get_peft_model
+
+# Define LoRA configuration
+lora_config = LoraConfig(
+    r=8,  # Low-rank dimension
+    lora_alpha=32,
+    target_modules=['ffn'],  # Apply LoRA only to FNN
+    lora_dropout=0.1
+)
+
+# Apply LoRA to the model
+peft_model = get_peft_model(model, lora_config)
+peft_model.print_trainable_parameters()
+
+# Training loop with LoRA
+peft_model.train()
+for epoch in range(5):
+    optimizer.zero_grad()
+    outputs = peft_model(input_ids, attention_mask).squeeze()
+    loss = criterion(outputs, labels)
+    loss.backward()
+    optimizer.step()
+    print(f'Epoch {epoch+1}, Loss: {loss.item()}')
+
+# LoRA has now optimized only the FNN while freezing major BERT parameters.
